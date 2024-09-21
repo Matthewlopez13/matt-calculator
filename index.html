@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Calculator</title>
+    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: hsl(328, 71%, 88%); padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        form { max-width: 400px; margin: 0 auto; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); }
+        label, input, button { display: block; width: 100%; margin-bottom: 15px; }
+        input { padding: 10px; font-size: 16px; }
+        button { background-color: #4CAF50; color: white; padding: 10px; font-size: 16px; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .message { margin-top: 20px; text-align: center; font-size: 18px; color: green; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mt-5"><span style="color: #0d0c0c;">Grade Calculator</span></h1>
+    <div>
+        <label for="prelim" class="form-label">Prelim Grade</label><br>
+        <input type="text" class="form-control" id="prelim" placeholder="Enter your Prelim grade">
+    </div>
+    <button class="btn btn-primary" id="calculate">Calculate</button>
+    
+    <div class="alert" id="error-message" style="display: none;"></div>
+    <div class="alert" id="result-message" style="display: none;"></div>
+</div>
+
+<py-script>
+    from pyscript import Element
+
+    def calculate_required_grades(prelim_grade):
+        passing_grade = 75
+        dean_lister_grade = 90
+        prelim_weight = 0.20
+        midterm_weight = 0.30
+        final_weight = 0.50
+
+        prelim_contrib = prelim_grade * prelim_weight
+
+        remaining_grade_needed_pass = passing_grade - prelim_contrib
+        remaining_grade_needed_dean = dean_lister_grade - prelim_contrib
+
+        max_possible_midterm_final = midterm_weight * 100 + final_weight * 100
+
+        if remaining_grade_needed_pass > max_possible_midterm_final:
+            return None, None, False
+
+        required_midterm_final_pass = remaining_grade_needed_pass / (midterm_weight + final_weight)
+        required_midterm_final_dean = remaining_grade_needed_dean / (midterm_weight + final_weight)
+
+        return required_midterm_final_pass, required_midterm_final_dean, True
+
+    def calculate_grades(event):
+        error_message = Element("error-message")
+        result_message = Element("result-message")
+        error_message.element.innerHTML = ""
+        result_message.element.innerHTML = ""
+
+        prelim_input = Element("prelim").element.value
+
+        try:
+            # Attempt to convert the input to a float
+            prelim_grade = float(prelim_input)
+
+            # Ensure the grade is between 0 and 100
+            if prelim_grade < 0 or prelim_grade > 100:
+                raise ValueError("Choose between 0-100.")
+
+            if prelim_grade <= 10:
+                result_message.element.innerHTML = "It is impossible to pass with the current Prelim grade."
+                result_message.element.className = "alert alert-danger"
+                result_message.element.style.display = "block"
+                return
+
+            required_grade_pass, required_grade_dean, can_pass = calculate_required_grades(prelim_grade)
+
+            if not can_pass:
+                result_message.element.innerHTML = "It is difficult to pass with the current Prelim grade."
+                result_message.element.className = "alert alert-danger"
+            else:
+                if required_grade_dean > 100:
+                    dean_message = "You cannot be a Dean’s Lister due to insufficient grades."
+                else:
+                    dean_message = f'To be a Dean\'s Lister, you need at least {required_grade_dean:.2f} in both Midterm and Final.'
+
+                result_message.element.innerHTML = (
+                    f'Prelim Grade: {prelim_grade}<br>'
+                    f'Required Midterm Grade: {required_grade_pass:.2f}<br>'
+                    f'Required Final Grade: {required_grade_pass:.2f}<br>'
+                    f'You have a chance to pass!<br>{dean_message}'
+                )
+                result_message.element.className = "alert alert-success"
+
+            result_message.element.style.display = "block"
+
+        # Catch ValueError for non-numeric input or invalid grade ranges
+        except ValueError:
+            error_message.element.innerHTML = "Choose between 0-100."
+            error_message.element.className = "alert alert-danger"
+            error_message.element.style.display = "block"
+        except Exception:
+            error_message.element.innerHTML = "An unexpected error occurred."
+            error_message.element.className = "alert alert-danger"
+            error_message.element.style.display = "block"
+
+    Element("calculate").element.onclick = calculate_grades
+</py-script>
+</body>
+</html>
